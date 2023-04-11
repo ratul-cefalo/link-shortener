@@ -1,0 +1,27 @@
+name: Pull from upstream
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs every day at midnight
+  workflow_dispatch: # on button click
+jobs:
+  pull-from-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get upstream URL
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          UPSTREAM_URL=$(curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPOSITORY | jq -r '.parent.clone_url')
+          echo "UPSTREAM_URL=$UPSTREAM_URL" >> $GITHUB_ENV
+          USERNAME=$(curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user | jq -r '.login')
+          echo "USERNAME=$USERNAME" >> $GITHUB_ENV
+      - name: Pull from upstream
+        run: |
+          git config --global user.email "89194947+ratul-cefalo@users.noreply.github.com"
+          git config --global user.name $USERNAME
+          git remote add upstream $UPSTREAM_URL
+          git pull upstream main --rebase
